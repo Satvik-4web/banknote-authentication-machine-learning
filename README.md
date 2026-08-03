@@ -112,13 +112,7 @@ Target
 
 # 📈 Visualizations
 
-## Dashboard
 
-<p align="center">
-<img src="screenshots/dashboard.png" width="950">
-</p>
-
----
 
 ## Accuracy Comparison
 
