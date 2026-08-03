@@ -1,7 +1,8 @@
+import os
+import joblib
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import joblib
 
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
@@ -18,11 +19,21 @@ from sklearn.metrics import (
     classification_report
 )
 
-# ============================================================
-# LOAD DATASET
-# ============================================================
+# ==========================================================
+# CREATE REQUIRED FOLDERS
+# ==========================================================
 
-data = pd.read_csv("dataset/dataset.txt", header=None)
+os.makedirs("models", exist_ok=True)
+os.makedirs("screenshots", exist_ok=True)
+
+# ==========================================================
+# LOAD DATASET
+# ==========================================================
+
+data = pd.read_csv(
+    "dataset/dataset.txt",
+    header=None
+)
 
 data.columns = [
     "Variance",
@@ -32,82 +43,226 @@ data.columns = [
     "Class"
 ]
 
-print("=" * 70)
-print("DATASET LOADED SUCCESSFULLY")
-print("=" * 70)
+print("="*70)
+print("BANKNOTE AUTHENTICATION DATASET")
+print("="*70)
+
+print("\nFirst Five Rows\n")
 print(data.head())
 
-# ============================================================
-# FEATURES & TARGET
-# ============================================================
+print("\nDataset Shape")
+print(data.shape)
 
-X = data.drop("Class", axis=1)
+print("\nMissing Values")
+print(data.isnull().sum())
+
+print("\nClass Distribution")
+print(data["Class"].value_counts())
+
+# ==========================================================
+# CLASS DISTRIBUTION
+# ==========================================================
+
+plt.figure(figsize=(6,4))
+
+sns.countplot(
+    data=data,
+    x="Class",
+    color="#4C72B0",
+)
+
+plt.title(
+    "Distribution of Genuine and Counterfeit Banknotes",
+    fontsize=14
+)
+
+plt.xlabel("Class")
+plt.ylabel("Count")
+
+plt.tight_layout()
+
+plt.savefig(
+    "screenshots/class_distribution.png",
+    dpi=300
+)
+
+plt.show()
+
+# ==========================================================
+# FEATURE DISTRIBUTION
+# ==========================================================
+
+data.hist(
+    figsize=(12,8),
+    bins=20
+)
+
+plt.suptitle(
+    "Feature Distribution",
+    fontsize=16
+)
+
+plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+plt.savefig(
+    "screenshots/feature_distribution.png",
+    dpi=300
+)
+
+plt.show()
+
+# ==========================================================
+# HEATMAP
+# ==========================================================
+
+plt.figure(figsize=(8,6))
+
+sns.heatmap(
+    data.corr(),
+    annot=True,
+    cmap="coolwarm",
+    linewidths=0.5,
+    square=True
+)
+
+plt.title(
+    "Correlation Heatmap",
+    fontsize=15
+)
+
+plt.tight_layout()
+
+plt.savefig(
+    "screenshots/heatmap.png",
+    dpi=300
+)
+
+plt.show()
+
+# ==========================================================
+# PAIRPLOT
+# ==========================================================
+
+pair = sns.pairplot(
+    data,
+    hue="Class",
+    diag_kind="hist"
+)
+
+pair.fig.suptitle(
+    "Pair Plot",
+    y=1.02
+)
+
+pair.savefig(
+    "screenshots/pairplot.png",
+    dpi=300
+)
+
+plt.show()
+
+# ==========================================================
+# FEATURES & TARGET
+# ==========================================================
+
+X = data.drop(
+    "Class",
+    axis=1
+)
+
 y = data["Class"]
 
-# ============================================================
+# ==========================================================
 # TRAIN TEST SPLIT
-# ============================================================
+# ==========================================================
 
 X_train, X_test, y_train, y_test = train_test_split(
     X,
     y,
-    test_size=0.2,
+    test_size=0.20,
     random_state=42
 )
 
 print("\n")
-print("=" * 70)
+print("="*70)
 print("TRAIN TEST SPLIT")
-print("=" * 70)
+print("="*70)
 
-print("Training Features :", X_train.shape)
-print("Training Labels   :", y_train.shape)
-print("Testing Features  :", X_test.shape)
-print("Testing Labels    :", y_test.shape)
-
-# ============================================================
-# MODELS
-# ============================================================
+print("Training :", X_train.shape)
+print("Testing  :", X_test.shape)
+# ==========================================================
+# MACHINE LEARNING MODELS
+# ==========================================================
 
 models = {
 
     "Logistic Regression": LogisticRegression(max_iter=1000),
 
-    "Decision Tree": DecisionTreeClassifier(random_state=42),
+    "Decision Tree": DecisionTreeClassifier(
+        random_state=42
+    ),
 
-    "Random Forest": RandomForestClassifier(random_state=42),
+    "Random Forest": RandomForestClassifier(
+        random_state=42
+    ),
 
-    "KNN": KNeighborsClassifier(),
+    "K-Nearest Neighbors": KNeighborsClassifier(),
 
-    "SVM": SVC()
+    "Support Vector Machine": SVC()
 
 }
 
+# ==========================================================
+# MODEL COMPARISON
+# ==========================================================
+
 results = {}
+
+cv_results = {}
+
 trained_models = {}
 
 print("\n")
-print("=" * 70)
-print("MODEL COMPARISON")
-print("=" * 70)
-
-# ============================================================
-# TRAIN ALL MODELS
-# ============================================================
+print("="*70)
+print("TRAINING MACHINE LEARNING MODELS")
+print("="*70)
 
 for name, model in models.items():
 
-    print("\n" + "=" * 50)
-    print(name)
-    print("=" * 50)
+    print(f"\n{name}")
+    print("-"*50)
 
-    model.fit(X_train, y_train)
+    # -------------------------------
+    # Train Model
+    # -------------------------------
 
-    prediction = model.predict(X_test)
+    model.fit(
+        X_train,
+        y_train
+    )
 
-    accuracy = accuracy_score(y_test, prediction)
+    # -------------------------------
+    # Prediction
+    # -------------------------------
 
-    cv_scores = cross_val_score(
+    prediction = model.predict(
+        X_test
+    )
+
+    # -------------------------------
+    # Accuracy
+    # -------------------------------
+
+    accuracy = accuracy_score(
+        y_test,
+        prediction
+    )
+
+    # -------------------------------
+    # Cross Validation
+    # -------------------------------
+
+    cv = cross_val_score(
         model,
         X,
         y,
@@ -115,72 +270,187 @@ for name, model in models.items():
     )
 
     results[name] = accuracy
+
+    cv_results[name] = cv.mean()
+
     trained_models[name] = model
 
     print(f"Accuracy              : {accuracy*100:.2f}%")
-    print(f"Cross Validation Mean : {cv_scores.mean()*100:.2f}%")
-    print(f"Standard Deviation    : {cv_scores.std()*100:.2f}%")
+    print(f"Cross Validation Mean : {cv.mean()*100:.2f}%")
+    print(f"Standard Deviation    : {cv.std()*100:.2f}%")
 
-# ============================================================
-# FINAL RANKING
-# ============================================================
-
-print("\n")
-print("=" * 70)
-print("FINAL MODEL RANKING")
-print("=" * 70)
+# ==========================================================
+# SORT RESULTS
+# ==========================================================
 
 sorted_results = sorted(
+
     results.items(),
+
     key=lambda x: x[1],
+
     reverse=True
+
 )
 
-for rank, (model_name, accuracy) in enumerate(
-        sorted_results,
-        start=1):
-
-    print(f"{rank}. {model_name:<25} {accuracy*100:.2f}%")
-
-# ============================================================
-# BEST MODEL
-# ============================================================
-
-best_model_name = sorted_results[0][0]
-best_model = trained_models[best_model_name]
+# ==========================================================
+# FINAL RESULTS TABLE
+# ==========================================================
 
 print("\n")
-print("=" * 70)
-print("BEST MODEL")
-print("=" * 70)
+print("="*90)
+print("MODEL COMPARISON")
+print("="*90)
 
-print(f"Model Name : {best_model_name}")
-print(f"Accuracy   : {results[best_model_name]*100:.2f}%")
+print(
+    f"{'Rank':<6}"
+    f"{'Model':<30}"
+    f"{'Accuracy':<18}"
+    f"{'Cross Validation'}"
+)
 
-# ============================================================
-# SAVE MODEL
-# ============================================================
+print("-"*90)
+
+for rank, (model_name, accuracy) in enumerate(
+
+        sorted_results,
+
+        start=1):
+
+    print(
+
+        f"{rank:<6}"
+
+        f"{model_name:<30}"
+
+        f"{accuracy*100:<18.2f}"
+
+        f"{cv_results[model_name]*100:.2f}"
+
+    )
+
+# ==========================================================
+# BEST MODEL
+# ==========================================================
+
+best_accuracy = max(results.values())
+
+best_models = [
+
+    model
+
+    for model, acc in results.items()
+
+    if acc == best_accuracy
+
+]
+
+print("\n")
+print("="*70)
+print("BEST PERFORMING MODEL(S)")
+print("="*70)
+
+for model in best_models:
+
+    print(
+
+        f"{model} : {best_accuracy*100:.2f}%"
+
+    )
+
+# Select first best model for saving
+
+best_model_name = best_models[0]
+
+best_model = trained_models[best_model_name]
+
+prediction = best_model.predict(
+    X_test
+)
+# ==========================================================
+# SAVE BEST MODEL
+# ==========================================================
 
 joblib.dump(
     best_model,
     "models/currency_model.pkl"
 )
 
-print("\nModel saved successfully!")
+print("\n")
+print("=" * 70)
+print("MODEL SAVED SUCCESSFULLY")
+print("=" * 70)
 print("Location : models/currency_model.pkl")
 
-# ============================================================
+# ==========================================================
+# SAVE MODEL COMPARISON TABLE
+# ==========================================================
+
+comparison = pd.DataFrame({
+
+    "Model": list(results.keys()),
+
+    "Accuracy (%)": [
+
+        accuracy * 100
+
+        for accuracy in results.values()
+
+    ],
+
+    "Cross Validation (%)": [
+
+        cv * 100
+
+        for cv in cv_results.values()
+
+    ]
+
+})
+
+comparison = comparison.sort_values(
+
+    by="Accuracy (%)",
+
+    ascending=False
+
+)
+
+comparison.to_csv(
+
+    "screenshots/model_comparison.csv",
+
+    index=False
+
+)
+
+# ==========================================================
 # ACCURACY COMPARISON GRAPH
-# ============================================================
+# ==========================================================
+
+names = comparison["Model"]
+
+scores = comparison["Accuracy (%)"]
 
 plt.figure(figsize=(10,6))
 
 bars = plt.bar(
-    results.keys(),
-    [i*100 for i in results.values()]
+
+    names,
+
+    scores
+
 )
 
-plt.title("Accuracy Comparison of Machine Learning Models")
+plt.title(
+
+    "Accuracy Comparison of Machine Learning Models",
+
+    fontsize=15,
+
+    fontweight="bold"
+
+)
 
 plt.xlabel("Machine Learning Models")
 
@@ -188,68 +458,111 @@ plt.ylabel("Accuracy (%)")
 
 plt.ylim(95,101)
 
-plt.xticks(rotation=20)
+plt.grid(
+
+    axis="y",
+
+    linestyle="--",
+
+    alpha=0.3
+
+)
 
 for bar in bars:
 
-    height = bar.get_height()
-
     plt.text(
+
         bar.get_x()+bar.get_width()/2,
-        height+0.1,
-        f"{height:.2f}%",
-        ha="center"
+
+        bar.get_height()+0.08,
+
+        f"{bar.get_height():.2f}%",
+
+        ha="center",
+
+        fontsize=10
+
     )
+
+plt.xticks(rotation=15)
 
 plt.tight_layout()
 
 plt.savefig(
+
     "screenshots/accuracy_comparison.png",
-    dpi=300
+
+    dpi=300,
+
+    bbox_inches="tight"
+
 )
 
 plt.show()
 
-# ============================================================
+# ==========================================================
 # CONFUSION MATRIX
-# ============================================================
-
-prediction = best_model.predict(X_test)
+# ==========================================================
 
 cm = confusion_matrix(
+
     y_test,
+
     prediction
+
 )
 
 plt.figure(figsize=(6,5))
 
 sns.heatmap(
+
     cm,
+
     annot=True,
+
     fmt="d",
-    cmap="Blues"
+
+    cmap="Blues",
+
+    linewidths=1,
+
+    square=True,
+
+    cbar=False
+
 )
 
 plt.title(
-    f"{best_model_name} Confusion Matrix"
+
+    f"Confusion Matrix ({best_model_name})",
+
+    fontsize=14,
+
+    fontweight="bold"
+
 )
 
-plt.xlabel("Predicted")
+plt.xlabel("Predicted Label")
 
-plt.ylabel("Actual")
+plt.ylabel("Actual Label")
 
 plt.tight_layout()
 
 plt.savefig(
+
     "screenshots/confusion_matrix.png",
-    dpi=300
+
+    dpi=300,
+
+    bbox_inches="tight"
+
 )
 
 plt.show()
 
-# ============================================================
+# ==========================================================
 # CLASSIFICATION REPORT
-# ============================================================
+# ==========================================================
 
 print("\n")
 print("=" * 70)
@@ -257,29 +570,45 @@ print("CLASSIFICATION REPORT")
 print("=" * 70)
 
 print(
+
     classification_report(
+
         y_test,
+
         prediction
+
     )
+
 )
 
-# ============================================================
-# PROJECT SUMMARY
-# ============================================================
+# ==========================================================
+# FINAL PROJECT SUMMARY
+# ==========================================================
 
 print("\n")
 print("=" * 70)
 print("PROJECT SUMMARY")
 print("=" * 70)
 
-print(f"Dataset Size        : {len(data)} Samples")
-print(f"Number of Features  : {X.shape[1]}")
-print(f"Models Compared     : {len(models)}")
-print(f"Best Model          : {best_model_name}")
-print(f"Final Accuracy      : {results[best_model_name]*100:.2f}%")
-print(f"Saved Model         : models/currency_model.pkl")
-print(f"Accuracy Graph      : screenshots/accuracy_comparison.png")
-print(f"Confusion Matrix    : screenshots/confusion_matrix.png")
+print(f"Dataset Size           : {len(data)}")
+print(f"Number of Features     : {X.shape[1]}")
+print(f"Models Compared        : {len(models)}")
+print(f"Best Model             : {best_model_name}")
+print(f"Test Accuracy          : {results[best_model_name]*100:.2f}%")
+print(f"Cross Validation Score : {cv_results[best_model_name]*100:.2f}%")
+
+print("\nGenerated Files")
+
+print("-------------------------")
+
+print("✓ models/currency_model.pkl")
+print("✓ screenshots/class_distribution.png")
+print("✓ screenshots/feature_distribution.png")
+print("✓ screenshots/heatmap.png")
+print("✓ screenshots/pairplot.png")
+print("✓ screenshots/accuracy_comparison.png")
+print("✓ screenshots/confusion_matrix.png")
+print("✓ screenshots/model_comparison.csv")
 
 print("\n")
 print("=" * 70)

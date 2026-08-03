@@ -1,0 +1,6 @@
+Model,Accuracy (%),Cross Validation (%)
+Support Vector Machine,100.0,99.78128732581285
+K-Nearest Neighbors,100.0,100.0
+Random Forest,99.27272727272727,99.56284007962839
+Logistic Regression,98.54545454545455,98.97969475779695
+Decision Tree,98.18181818181819,98.1051094890511
